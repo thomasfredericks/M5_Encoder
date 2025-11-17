@@ -16,7 +16,7 @@ private:
     void readBytes(uint8_t addr, uint8_t reg, uint8_t* buffer, uint8_t length);
 
 public:
-    void begin(TwoWire* wire = &Wire, uint8_t addr = ENCODER_ADDR, uint8_t sda = SDA, uint8_t scl = SCL,
+    void begin(TwoWire* wire = &Wire, uint8_t addr = 0x40, uint8_t sda = SDA, uint8_t scl = SCL,
                uint32_t speed = 200000L);
     signed short int getEncoderValue();
     bool getButtonStatus();
