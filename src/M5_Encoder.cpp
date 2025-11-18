@@ -7,68 +7,86 @@
 #define RGB_LED_REG  0x30
 
 /*! @brief Initialize the Encoder. */
-void Unit_Encoder::begin(TwoWire *wire, uint8_t addr, uint8_t sda, uint8_t scl,
-                         uint32_t speed) {
-    _wire  = wire;
-    _addr  = addr;
-    _sda   = sda;
-    _scl   = scl;
-    _speed = speed;
-    _wire->begin((int)_sda, (int)_scl, _speed);
+void M5_Encoder::begin() {
+
 }
 
 /*! @brief Write a certain length of data to the specified register address. */
-void Unit_Encoder::writeBytes(uint8_t addr, uint8_t reg, uint8_t *buffer,
+void M5_Encoder::writeBytes(uint8_t addr, uint8_t reg, uint8_t *buffer,
                               uint8_t length) {
-    _wire->beginTransmission(addr);
-    _wire->write(reg);
+    _wire.beginTransmission(addr);
+    _wire.write(reg);
     for (int i = 0; i < length; i++) {
-        _wire->write(*(buffer + i));
+        _wire.write(*(buffer + i));
     }
-    _wire->endTransmission();
+    _wire.endTransmission();
 }
 
 /*! @brief Read a certain length of data to the specified register address. */
-void Unit_Encoder::readBytes(uint8_t addr, uint8_t reg, uint8_t *buffer,
+void M5_Encoder::readBytes(uint8_t addr, uint8_t reg, uint8_t *buffer,
                              uint8_t length) {
     uint8_t index = 0;
-    _wire->beginTransmission(addr);
-    _wire->write(reg);
-    _wire->endTransmission();
-    _wire->requestFrom(addr, length);
+    _wire.beginTransmission(addr);
+    _wire.write(reg);
+    _wire.endTransmission();
+    _wire.requestFrom(addr, length);
     for (int i = 0; i < length; i++) {
-        buffer[index++] = _wire->read();
+        buffer[index++] = _wire.read();
     }
 }
 
-/*! @brief Read the encoder value.
-    @return The value of the encoder that was read */
-signed short int Unit_Encoder::getEncoderValue() {
+
+
+void M5_Encoder::update() {
+    // Read encoder value
+    int16_t previous = _value;
     uint8_t data[2];
     readBytes(_addr, ENCODER_REG, data, 2);
-    signed short int value = (signed short int)((data[0]) | (data[1]) << 8);
-    return value;
+    _value = (int16_t)((data[0]) | (data[1]) << 8);
+    _change = _value - previous;
+    // Read button state
+    readBytes(_addr, BUTTON_REG, &_buttonState, 1);
+}
+
+/*! @brief Read the encoder rotation.
+    @return The value of the encoder that was read */
+int16_t M5_Encoder::getEncoderRotation() {
+    return _value;
+}
+
+int16_t M5_Encoder::getEncoderChange() {
+
+    return _change;
 }
 
 /*! @brief Get the current status of the rotary encoder keys.
     @return 1 if the set was press, otherwise 0.. */
-bool Unit_Encoder::getButtonStatus() {
-    uint8_t data;
-    readBytes(_addr, BUTTON_REG, &data, 1);
-    return data;
+uint8_t M5_Encoder::getButtonState() {
+    return _buttonState;
 }
 
-/*! @brief Set the color of the LED (HEX). */
-void Unit_Encoder::setLEDColor(uint8_t index, uint32_t color) {
+/*! @brief Set the color of the LED (3 values). */
+void M5_Encoder::setLEDColor(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
     uint8_t data[4];
-    data[3] = color & 0xff;
-    data[2] = (color >> 8) & 0xff;
-    data[1] = (color >> 16) & 0xff;
+    data[3] = b;
+    data[2] = g;
+    data[1] = r;
     data[0] = index;
     writeBytes(_addr, RGB_LED_REG, data, 4);
 }
 
-void Unit_Encoder::setWorkMode(uint8_t mode)
+    void M5_Encoder::setLEDColorBoth(uint8_t r, uint8_t g, uint8_t b) {
+        setLEDColor(0, r, g, b) ;
+    }
+    void M5_Encoder::setLEDColorLeft(uint8_t r, uint8_t g, uint8_t b) {
+        setLEDColor(1, r, g, b) ;
+    }
+    void M5_Encoder::setLEDColorRight(uint8_t r, uint8_t g, uint8_t b) {
+        setLEDColor(2, r, g, b) ;
+    }
+
+
+void M5_Encoder::setWorkMode(uint8_t mode)
 {
     writeBytes(_addr, MODE_REG, &mode, 1);
 }
